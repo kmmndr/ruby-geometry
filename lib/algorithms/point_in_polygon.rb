@@ -1,7 +1,9 @@
 module Geometry
   class PointInPolygon < Struct.new(:point, :polygon)
     extend Memoist
-    
+
+    MAX_SEED = 1000000.0
+
     def inside?
       point_location == :inside
     end
@@ -36,8 +38,10 @@ module Geometry
 
     def choose_good_ray
       ray = random_ray
-      while ! good_ray?(ray) do
-        ray = random_ray
+      seed = 1.0
+      while (seed < MAX_SEED) && (! good_ray?(ray)) do
+        seed += 1.0
+        ray = random_ray(seed)
       end
       ray
     end
@@ -45,14 +49,14 @@ module Geometry
     def good_ray?(ray)
       edges.none? { |edge| !edge.length.zero? && edge.parallel_to?(ray) } && vertices.none? { |vertex| ray.contains_point?(vertex) }
     end
-    
+
     def intersection_count(ray)
       edges.select { |edge| edge.intersects_with?(ray) }.size
     end
-    
-    def random_ray
-      random_direction = rand * (2 * Math::PI)
-      
+
+    def random_ray(seed = 1.0)
+      random_direction = (Math::PI / 2.0 * seed + Math::PI / (seed + 1.0)) % (Math::PI * 2.0)
+
       ray_endpoint = Point sufficient_ray_radius * Math.cos(random_direction), sufficient_ray_radius * Math.sin(random_direction)
       Segment point, ray_endpoint
     end
